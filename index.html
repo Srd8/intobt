@@ -1,0 +1,830 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Epic Gift</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <script src="https://unpkg.com/@tonconnect/ui@latest/dist/tonconnect-ui.min.js"></script>
+  <style>
+    :root {
+      --bg: #13121a;
+      --card: #1e1c2a;
+      --card-2: #272436;
+      --accent: #7c4dff;
+      --gold: #f5b014;
+      --green: #1bd96a;
+      --text: #ffffff;
+      --muted: #a49fb6;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; }
+    body { background: var(--bg); color: var(--text); max-width: 480px; margin: 0 auto; min-height: 100vh; padding-bottom: 82px; }
+
+    .topbar { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 12px 14px; background: #181622; border-bottom: 1px solid #2a273b; }
+    .user-box { display: flex; align-items: center; gap: 10px; min-width: 0; }
+    .avatar-wrap { position: relative; width: 44px; height: 44px; flex-shrink: 0; }
+    .avatar { width: 44px; height: 44px; border-radius: 50%; object-fit: cover; background: var(--card-2); border: 2px solid #8b5cf6; }
+    .avatar-badge { position: absolute; bottom: -3px; left: 50%; transform: translateX(-50%); background: #272436; border: 1px solid #484263; border-radius: 999px; font-size: 9px; padding: 0 5px; color: #e5e2f0; }
+    .bal-col { display: flex; flex-direction: column; gap: 3px; }
+    .bal-label { font-size: 11px; color: var(--muted); }
+    .bal-line { display: flex; flex-wrap: wrap; gap: 8px; font-size: 12px; font-weight: 800; }
+
+    .top-actions { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+    .btn { border: none; border-radius: 12px; padding: 10px 12px; font-weight: 800; cursor: pointer; color: #fff; background: var(--accent); transition: transform 0.12s ease, opacity 0.12s ease; font-size: 12px; }
+    .btn:active { transform: scale(0.98); }
+    .btn-connect { background: #2979ff; color: #fff; padding: 9px 10px; white-space: nowrap; }
+    .btn-connect.connected { background: #138a4b; color: #fff; }
+    .btn-deposit { background: #7c4dff; padding: 9px 12px; white-space: nowrap; }
+    .btn-gold { background: var(--gold); color: #161309; }
+    .btn-ghost { background: var(--card-2); color: var(--text); }
+
+    .wallet-bar { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 14px; background: #16141f; border-bottom: 1px solid #242133; font-size: 11px; color: var(--muted); }
+    .wallet-addr { font-family: monospace; color: #dcd7ee; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 250px; }
+
+    .live-strip { display: flex; align-items: center; gap: 8px; overflow-x: auto; padding: 10px 14px; background: #171520; border-bottom: 1px solid #262336; }
+    .live-pill { background: var(--green); color: #072011; font-weight: 900; font-size: 11px; padding: 5px 8px; border-radius: 8px; white-space: nowrap; flex-shrink: 0; }
+    .live-card { min-width: 62px; height: 62px; border-radius: 14px; background: var(--card-2); border: 1px solid #35314b; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; font-size: 11px; font-weight: 700; flex-shrink: 0; padding: 4px; text-align: center; }
+
+    .section { padding: 12px 14px; }
+    .banner { border-radius: 18px; padding: 16px; margin-bottom: 12px; cursor: pointer; border: 1px solid rgba(255,255,255,0.08); }
+    .banner-rocket { background: linear-gradient(135deg, #1d6aff, #54a8ff); }
+    .banner-pvp { background: linear-gradient(135deg, #d97706, #f5b014); color: #171308; }
+    .banner-play { background: linear-gradient(135deg, #5b21b6, #8b5cf6); }
+    .tag-chip { display: inline-block; font-size: 10px; font-weight: 900; padding: 3px 8px; border-radius: 8px; margin-bottom: 6px; background: rgba(0,0,0,0.22); color: #fff; }
+    .banner-title { font-size: 21px; font-weight: 900; letter-spacing: 0.3px; }
+    .banner-sub { font-size: 12px; opacity: 0.92; margin-top: 4px; font-weight: 600; }
+
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .promo-card { background: var(--card); border-radius: 18px; padding: 14px; border: 1px solid #2d2940; display: flex; flex-direction: column; justify-content: space-between; min-height: 155px; }
+    .promo-head { font-size: 18px; font-weight: 900; }
+    .promo-sub { font-size: 12px; color: var(--muted); margin-top: 4px; }
+
+    .panel { background: var(--card); border-radius: 18px; padding: 14px; border: 1px solid #2d2940; margin-bottom: 12px; }
+    .panel-title { font-size: 16px; font-weight: 900; margin-bottom: 10px; }
+    .muted { color: var(--muted); font-size: 12px; }
+    .list-item { background: var(--card-2); border: 1px solid #35314b; border-radius: 12px; padding: 10px 12px; margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 13px; }
+
+    input, select { width: 100%; padding: 10px 12px; border-radius: 12px; border: 1px solid #38334f; background: var(--bg); color: #fff; margin-bottom: 10px; font-size: 13px; }
+
+    .nav { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 480px; background: #181622; border-top: 1px solid #2a273b; display: grid; grid-template-columns: repeat(5, 1fr); padding: 8px 4px; z-index: 30; }
+    .nav-btn { background: none; border: none; color: var(--muted); display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 11px; cursor: pointer; padding: 4px; border-radius: 10px; }
+    .nav-btn.active { color: #fff; background: rgba(124,77,255,0.2); font-weight: 800; }
+
+    .modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.75); display: none; align-items: center; justify-content: center; padding: 16px; z-index: 60; }
+    .modal-backdrop.open { display: flex; }
+    .modal { width: 100%; max-width: 420px; background: var(--card); border: 1px solid #3b3652; border-radius: 20px; padding: 16px; max-height: 86vh; overflow-y: auto; }
+    .modal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+    .row-gap { display: flex; gap: 8px; }
+  </style>
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="user-box">
+      <div class="avatar-wrap">
+        <img id="userAvatar" class="avatar" alt="User" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64'%3E%3Crect width='64' height='64' fill='%23272436'/%3E%3Ccircle cx='32' cy='24' r='11' fill='%237c4dff'/%3E%3Cellipse cx='32' cy='50' rx='18' ry='12' fill='%237c4dff'/%3E%3C/svg%3E" />
+        <span class="avatar-badge">TON</span>
+      </div>
+      <div class="bal-col">
+        <div class="bal-label" id="userLabel">Your balance</div>
+        <div class="bal-line">
+          <span>💎 <span id="balTon">0.000</span> TON</span>
+          <span>🪙 <span id="balGram">0.000</span> GRAM</span>
+          <span>⭐ <span id="balStars">0</span></span>
+        </div>
+      </div>
+    </div>
+    <div class="top-actions">
+      <button id="connectWalletBtn" class="btn btn-connect" onclick="toggleConnectWallet()">Connect Wallet</button>
+      <button class="btn btn-deposit" onclick="openDepositModal()">Deposit</button>
+    </div>
+  </header>
+
+  <div class="wallet-bar">
+    <span id="walletStatusText">المحفظة غير مربوطة</span>
+    <span id="dbSyncBadge" style="color:#1bd96a;font-weight:700;">Supabase ●</span>
+    <span class="wallet-addr" id="walletAddressText">—</span>
+  </div>
+
+  <div class="live-strip" id="liveStrip">
+    <span class="live-pill">Live •</span>
+  </div>
+
+  <main id="tab-home" class="section">
+    <div class="banner banner-rocket" onclick="openGameModal('rocket')">
+      <span class="tag-chip">HOT • MAX 0.99x</span>
+      <div class="banner-title">🚀 ROCKET</div>
+      <div class="banner-sub">TON • GRAM • سقف ربح أقصى 0.99</div>
+    </div>
+
+    <div class="banner banner-pvp" onclick="openGameModal('pvp')">
+      <span class="tag-chip">NEW • SOLO / TEAM</span>
+      <div class="banner-title">⚔️ PVP HUB</div>
+      <div class="banner-sub">معارك مباشرة بين اللاعبين</div>
+    </div>
+
+    <div class="banner banner-play" onclick="openGameModal('play')">
+      <span class="tag-chip">SPIN • MINES • PLINKO</span>
+      <div class="banner-title">🎮 PLAY HUB</div>
+      <div class="banner-sub">ألعاب مصغرة • حد أقصى للربح 0.99</div>
+    </div>
+
+    <div class="grid-2">
+      <div class="promo-card">
+        <div>
+          <div class="promo-head">FREE24</div>
+          <div class="promo-sub" id="free24Sub">مكافأة مجانية كل 24 ساعة</div>
+        </div>
+        <button class="btn btn-gold" style="width:100%;margin-top:12px;" onclick="claimFree24()">FREE</button>
+      </div>
+
+      <div class="promo-card">
+        <div>
+          <div class="promo-head">FREE</div>
+          <div class="promo-sub">نجوم وهدايا تيليجرام الحقيقية</div>
+        </div>
+        <button class="btn" style="width:100%;margin-top:12px;" onclick="openGameModal('gifts')">FREE</button>
+      </div>
+    </div>
+  </main>
+
+  <main id="tab-backpack" class="section" style="display:none;">
+    <div class="panel">
+      <div class="panel-title">Backpack</div>
+      <div id="backpackContainer"></div>
+    </div>
+  </main>
+
+  <main id="tab-invite" class="section" style="display:none;">
+    <div class="panel">
+      <div class="panel-title">Invite</div>
+      <div class="muted" style="margin-bottom:8px;">رابط الدعوة الخاص بك:</div>
+      <input id="inviteUrlInput" type="text" readonly />
+      <button class="btn" style="width:100%;" onclick="copyInviteLink()">نسخ الرابط</button>
+    </div>
+  </main>
+
+  <main id="tab-leaderboard" class="section" style="display:none;">
+    <div class="panel">
+      <div class="panel-title">Leaderboard</div>
+      <div id="leaderboardContainer"></div>
+    </div>
+  </main>
+
+  <main id="tab-earn" class="section" style="display:none;">
+    <div class="panel">
+      <div class="panel-title">Earn</div>
+      <div id="tasksContainer"></div>
+    </div>
+
+    <div class="panel" id="adminPanel" style="display:none;">
+      <div class="panel-title">إضافة مهمة (أدمن)</div>
+      <input id="taskTitleInput" type="text" placeholder="عنوان المهمة" />
+      <input id="taskAmountInput" type="number" step="0.01" min="0.01" placeholder="قيمة المكافأة" />
+      <select id="taskCurrencyInput">
+        <option value="TON">TON</option>
+        <option value="GRAM">GRAM</option>
+      </select>
+      <button class="btn" style="width:100%;" onclick="createTask()">إضافة المهمة</button>
+    </div>
+  </main>
+
+  <nav class="nav">
+    <button class="nav-btn" data-tab="backpack" onclick="switchTab('backpack')">🎒<span>Backpack</span></button>
+    <button class="nav-btn" data-tab="invite" onclick="switchTab('invite')">👥<span>Invite</span></button>
+    <button class="nav-btn active" data-tab="home" onclick="switchTab('home')">🏠<span>Home</span></button>
+    <button class="nav-btn" data-tab="leaderboard" onclick="switchTab('leaderboard')">🏆<span>Leaderboard</span></button>
+    <button class="nav-btn" data-tab="earn" onclick="switchTab('earn')">🪙<span>Earn</span></button>
+  </nav>
+
+  <div class="modal-backdrop" id="modalBackdrop">
+    <div class="modal" id="modalBox"></div>
+  </div>
+
+  <script>
+    // =========================================================================
+    // الإعدادات المحدثة للمشروع
+    // =========================================================================
+    const SUPABASE_URL = "https://isujdshthulemghpvodm.supabase.co";
+    const SUPABASE_ANON_KEY = "Sb_publishable_LpDn2Usm2HXFRgLfRbFHYA_qQBbwbfn";
+    const ADMIN_ID = "5220076610";
+    const BOT_USERNAME = "Ccudr_BoT";
+    const MY_TON_WALLET = "UQCyYjztRjuwNpCvg5m_v0KlrAplIgtspBVJ4OjEszz-xFXj";
+    const GRAM_WALLET_ADDRESS = "UQCyYjztRjuwNpCvg5m_v0KlrAplIgtspBVJ4OjEszz-xFXj";
+    const TONCENTER_API = "https://toncenter.com/api/v2";
+    const EDGE_FUNCTION_URL = "";
+    const MAX_WIN_RATIO = 0.99;
+
+    const tg = window.Telegram?.WebApp;
+    if (tg) {
+      tg.ready();
+      tg.expand();
+    }
+
+    const tgUser = tg?.initDataUnsafe?.user || {
+      id: 5220076610,
+      first_name: "Admin",
+      username: "admin",
+      photo_url: ""
+    };
+
+    const userId = String(tgUser.id);
+    document.getElementById("userLabel").textContent = `${tgUser.first_name || tgUser.username || userId} • Your balance`;
+    if (tgUser.photo_url) {
+      document.getElementById("userAvatar").src = tgUser.photo_url;
+    }
+    if (userId === ADMIN_ID) {
+      document.getElementById("adminPanel").style.display = "block";
+    }
+    document.getElementById("inviteUrlInput").value = `https://t.me/${BOT_USERNAME}?start=ref_${userId}`;
+
+    let userState = {
+      tg_id: userId,
+      username: tgUser.username || "",
+      wallet_address: "",
+      balance_ton: 0,
+      balance_gram: 0,
+      stars_balance: 0,
+      deposit_tag: `U${userId}`,
+      last_daily: null,
+      backpack: [],
+      processed_txs: []
+    };
+
+    let appData = {
+      tasks: [],
+      pvp_rooms: [],
+      leaderboard: [],
+      live_wins: []
+    };
+
+    let connectedWalletAddress = "";
+    let tonConnectUI = null;
+
+    function updateWalletUI(address) {
+      connectedWalletAddress = address || "";
+      const btn = document.getElementById("connectWalletBtn");
+      const statusEl = document.getElementById("walletStatusText");
+      const addrEl = document.getElementById("walletAddressText");
+
+      if (connectedWalletAddress) {
+        btn.textContent = "Wallet Connected";
+        btn.classList.add("connected");
+        statusEl.textContent = "المحفظة مربوطة بنجاح";
+        addrEl.textContent = connectedWalletAddress;
+      } else {
+        btn.textContent = "Connect Wallet";
+        btn.classList.remove("connected");
+        statusEl.textContent = "المحفظة غير مربوطة";
+        addrEl.textContent = "—";
+      }
+    }
+
+    try {
+      const manifestUrl = new URL("tonconnect-manifest.json", window.location.origin).toString();
+      tonConnectUI = new TON_CONNECT_UI.TonConnectUI({
+        manifestUrl
+      });
+
+      if (tonConnectUI.wallet?.account?.address) {
+        updateWalletUI(tonConnectUI.wallet.account.address);
+      }
+
+      tonConnectUI.onStatusChange(async (wallet) => {
+        const addr = wallet?.account?.address || "";
+        updateWalletUI(addr);
+        if (addr && userState.wallet_address !== addr) {
+          userState.wallet_address = addr;
+          await saveUserState().catch(() => {});
+        }
+      });
+    } catch (e) {
+      console.error("TON Connect init warning:", e);
+      const statusEl = document.getElementById("walletStatusText");
+      if (statusEl) statusEl.textContent = "تعذر تهيئة TON Connect — تحقق من tonconnect-manifest.json";
+    }
+
+    async function toggleConnectWallet() {
+      if (!tonConnectUI) {
+        alert("تعذر تهيئة TON Connect UI على هذا الرابط");
+        return;
+      }
+      try {
+        if (tonConnectUI.wallet) {
+          await tonConnectUI.disconnect();
+          userState.wallet_address = "";
+          updateWalletUI("");
+          await saveUserState().catch(() => {});
+        } else {
+          await tonConnectUI.openModal();
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    function hasSupabaseKey() {
+      return Boolean(SUPABASE_ANON_KEY) && !SUPABASE_ANON_KEY.includes("ضع_");
+    }
+
+    function secureRandomFloat() {
+      const buf = new Uint32Array(1);
+      crypto.getRandomValues(buf);
+      return buf[0] / 4294967296;
+    }
+
+    function calcCappedWin(bet, rawRatio) {
+      const clampedRatio = Math.min(Math.max(Number(rawRatio) || 0, 0), MAX_WIN_RATIO);
+      return Number((bet * clampedRatio).toFixed(4));
+    }
+
+    async function sbReq(path, options = {}) {
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+        ...options,
+        headers: {
+          "apikey": SUPABASE_ANON_KEY,
+          "Authorization": `Bearer ${SUPABASE_ANON_KEY}`,
+          "Content-Type": "application/json",
+          "Prefer": "return=representation",
+          ...(options.headers || {})
+        }
+      });
+      if (!res.ok) {
+        const errText = await res.text();
+        throw new Error(errText || `HTTP ${res.status}`);
+      }
+      const txt = await res.text();
+      return txt ? JSON.parse(txt) : null;
+    }
+
+    async function loadAllData() {
+      if (hasSupabaseKey()) {
+        try {
+          const users = await sbReq(`users?tg_id=eq.${encodeURIComponent(userId)}&select=*`);
+          if (Array.isArray(users) && users.length > 0) {
+            Object.assign(userState, users[0]);
+            if (!Array.isArray(userState.backpack)) userState.backpack = [];
+            if (!Array.isArray(userState.processed_txs)) userState.processed_txs = [];
+            if (userState.wallet_address) updateWalletUI(userState.wallet_address);
+          } else {
+            const created = await sbReq("users", {
+              method: "POST",
+              body: JSON.stringify([{
+                tg_id: userId,
+                username: tgUser.username || "",
+                wallet_address: "",
+                balance_ton: 0,
+                balance_gram: 0,
+                stars_balance: 0,
+                deposit_tag: `U${userId}`,
+                backpack: [],
+                processed_txs: []
+              }])
+            });
+            if (Array.isArray(created) && created[0]) {
+              Object.assign(userState, created[0]);
+            }
+          }
+
+          const tasks = await sbReq("tasks?select=*&order=id.desc");
+          if (Array.isArray(tasks)) appData.tasks = tasks;
+
+          const rooms = await sbReq("pvp_rooms?status=eq.open&select=*&order=id.desc");
+          if (Array.isArray(rooms)) appData.pvp_rooms = rooms;
+
+          const top = await sbReq("users?select=tg_id,username,balance_ton,balance_gram&order=balance_ton.desc&limit=10");
+          if (Array.isArray(top)) appData.leaderboard = top;
+
+          const wins = await sbReq("live_wins?select=*&order=id.desc&limit=12");
+          if (Array.isArray(wins)) appData.live_wins = wins;
+        } catch (err) {
+          console.error("Supabase sync error:", err);
+          const badge = document.getElementById("dbSyncBadge");
+          if (badge) {
+            badge.textContent = "Local Mode ○";
+            badge.style.color = "#f5b014";
+          }
+        }
+      }
+      renderUI();
+    }
+
+    async function saveUserState() {
+      userState.balance_ton = Number(Math.max(0, userState.balance_ton || 0).toFixed(4));
+      userState.balance_gram = Number(Math.max(0, userState.balance_gram || 0).toFixed(4));
+      userState.stars_balance = Math.max(0, parseInt(userState.stars_balance || 0, 10));
+
+      if (!hasSupabaseKey()) return;
+      await sbReq(`users?tg_id=eq.${encodeURIComponent(userId)}`, {
+        method: "PATCH",
+        body: JSON.stringify({
+          username: userState.username,
+          wallet_address: userState.wallet_address || connectedWalletAddress || "",
+          balance_ton: userState.balance_ton,
+          balance_gram: userState.balance_gram,
+          stars_balance: userState.stars_balance,
+          last_daily: userState.last_daily,
+          backpack: userState.backpack,
+          processed_txs: userState.processed_txs
+        })
+      });
+    }
+
+    async function pushLiveWin(label) {
+      appData.live_wins.unshift({ label });
+      appData.live_wins = appData.live_wins.slice(0, 12);
+      renderLiveStrip();
+      if (hasSupabaseKey()) {
+        await sbReq("live_wins", {
+          method: "POST",
+          body: JSON.stringify([{ tg_id: userId, label }])
+        }).catch(() => {});
+      }
+    }
+
+    function renderUI() {
+      document.getElementById("balTon").textContent = Number(userState.balance_ton || 0).toFixed(3);
+      document.getElementById("balGram").textContent = Number(userState.balance_gram || 0).toFixed(3);
+      document.getElementById("balStars").textContent = Number(userState.stars_balance || 0);
+      renderLiveStrip();
+      renderBackpack();
+      renderLeaderboard();
+      renderTasks();
+    }
+
+    function renderLiveStrip() {
+      const strip = document.getElementById("liveStrip");
+      strip.innerHTML = `<span class="live-pill">Live •</span>`;
+      appData.live_wins.forEach((w) => {
+        const card = document.createElement("div");
+        card.className = "live-card";
+        card.textContent = w.label;
+        strip.appendChild(card);
+      });
+    }
+
+    function renderBackpack() {
+      const el = document.getElementById("backpackContainer");
+      if (!userState.backpack.length) {
+        el.innerHTML = `<div class="muted">الحقيبة فارغة حالياً</div>`;
+        return;
+      }
+      el.innerHTML = userState.backpack
+        .map((item, i) => `<div class="list-item"><span>${item}</span><span class="muted">#${i + 1}</span></div>`)
+        .join("");
+    }
+
+    function renderLeaderboard() {
+      const el = document.getElementById("leaderboardContainer");
+      if (!appData.leaderboard.length) {
+        el.innerHTML = `<div class="muted">لا يوجد متصدرون بعد</div>`;
+        return;
+      }
+      el.innerHTML = appData.leaderboard
+        .map((u, i) => `
+          <div class="list-item">
+            <span>#${i + 1} ${u.username || u.tg_id}</span>
+            <strong>${Number(u.balance_ton || 0).toFixed(3)} TON</strong>
+          </div>
+        `)
+        .join("");
+    }
+
+    function renderTasks() {
+      const el = document.getElementById("tasksContainer");
+      if (!appData.tasks.length) {
+        el.innerHTML = `<div class="muted">لا توجد مهام حالياً</div>`;
+        return;
+      }
+      el.innerHTML = appData.tasks
+        .map((t) => `
+          <div class="list-item">
+            <div>
+              <div><strong>${t.title}</strong></div>
+              <div class="muted">+${t.reward_amount} ${t.reward_currency}</div>
+            </div>
+            <button class="btn" onclick="claimTask(${t.id}, ${t.reward_amount}, '${t.reward_currency}')">Claim</button>
+          </div>
+        `)
+        .join("");
+    }
+
+    async function claimTask(id, reward, currency) {
+      const amt = Number(reward) || 0;
+      if (amt <= 0) return;
+      if (currency === "GRAM") userState.balance_gram += amt;
+      else userState.balance_ton += amt;
+      await saveUserState();
+      renderUI();
+      alert(`+${amt} ${currency}`);
+    }
+
+    async function createTask() {
+      if (userId !== ADMIN_ID) return;
+      const title = document.getElementById("taskTitleInput").value.trim();
+      const reward_amount = parseFloat(document.getElementById("taskAmountInput").value);
+      const reward_currency = document.getElementById("taskCurrencyInput").value;
+      if (!title || isNaN(reward_amount) || reward_amount <= 0) return;
+
+      if (hasSupabaseKey()) {
+        const created = await sbReq("tasks", {
+          method: "POST",
+          body: JSON.stringify([{ title, reward_amount, reward_currency }])
+        });
+        if (Array.isArray(created) && created[0]) appData.tasks.unshift(created[0]);
+      } else {
+        appData.tasks.unshift({ id: Date.now(), title, reward_amount, reward_currency });
+      }
+      document.getElementById("taskTitleInput").value = "";
+      document.getElementById("taskAmountInput").value = "";
+      renderTasks();
+    }
+
+    async function claimFree24() {
+      const now = Date.now();
+      if (userState.last_daily && now - new Date(userState.last_daily).getTime() < 86400000) {
+        alert("متاح كل 24 ساعة");
+        return;
+      }
+      userState.last_daily = new Date(now).toISOString();
+      userState.balance_ton += 0.05;
+      await saveUserState();
+      await pushLiveWin("+0.05 TON");
+      renderUI();
+    }
+
+    function switchTab(tab) {
+      document.querySelectorAll("main").forEach((m) => (m.style.display = "none"));
+      document.getElementById(`tab-${tab}`).style.display = "block";
+      document.querySelectorAll(".nav-btn").forEach((b) => b.classList.toggle("active", b.dataset.tab === tab));
+    }
+
+    function closeModal() {
+      document.getElementById("modalBackdrop").classList.remove("open");
+    }
+
+    document.getElementById("modalBackdrop").addEventListener("click", (e) => {
+      if (e.target.id === "modalBackdrop") closeModal();
+    });
+
+    function openDepositModal() {
+      const box = document.getElementById("modalBox");
+      box.innerHTML = `
+        <div class="modal-head">
+          <strong>Deposit TON</strong>
+          <button class="btn btn-ghost" onclick="closeModal()">✕</button>
+        </div>
+        <div class="muted">حالة المحفظة: ${connectedWalletAddress ? connectedWalletAddress : "غير مربوطة"}</div>
+        <div class="muted" style="margin-top:8px;">عنوان محفظة TON المستقبِلة:</div>
+        <input type="text" readonly value="${MY_TON_WALLET}" />
+        <div class="muted">عنوان عملة GRAM المستقبِلة:</div>
+        <input type="text" readonly value="${GRAM_WALLET_ADDRESS}" />
+        <div class="muted">Memo / Tag الخاص بك:</div>
+        <input type="text" readonly value="${userState.deposit_tag}" />
+        <button class="btn btn-connect" style="width:100%;margin-bottom:8px;" onclick="toggleConnectWallet()">${connectedWalletAddress ? "فصل / إدارة المحفظة" : "Connect Wallet"}</button>
+        <button class="btn btn-gold" style="width:100%;" onclick="verifyTonDeposit()">تحقق من الإيداع الآن</button>
+      `;
+      document.getElementById("modalBackdrop").classList.add("open");
+    }
+
+    async function verifyTonDeposit() {
+      if (!MY_TON_WALLET || MY_TON_WALLET.includes("UQ____")) {
+        alert("ضع عنوان محفظتك الحقيقي أولاً");
+        return;
+      }
+      try {
+        const res = await fetch(`${TONCENTER_API}/getTransactions?address=${encodeURIComponent(MY_TON_WALLET)}&limit=25`);
+        const json = await res.json();
+        let added = 0;
+
+        if (json.ok && Array.isArray(json.result)) {
+          for (const tx of json.result) {
+            const hash = tx.transaction_id?.hash;
+            const comment = (tx.in_msg?.message || "").trim();
+            const nano = Number(tx.in_msg?.value || 0);
+            if (!hash || userState.processed_txs.includes(hash)) continue;
+            if (comment === userState.deposit_tag && nano > 0) {
+              const tonAmt = nano / 1e9;
+              userState.balance_ton += tonAmt;
+              userState.processed_txs.push(hash);
+              added += tonAmt;
+            }
+          }
+        }
+
+        if (added > 0) {
+          await saveUserState();
+          await pushLiveWin(`+${added.toFixed(3)} TON`);
+          renderUI();
+          alert(`تمت إضافة ${added.toFixed(4)} TON إلى رصيدك`);
+        } else {
+          alert("لم يتم العثور على إيداع جديد مطابق للـ Tag بعد");
+        }
+      } catch (e) {
+        alert("تعذر التحقق من الشبكة حالياً");
+      }
+    }
+
+    function openGameModal(type) {
+      const box = document.getElementById("modalBox");
+      if (type === "rocket") {
+        box.innerHTML = `
+          <div class="modal-head">
+            <strong>🚀 ROCKET (Max 0.99x)</strong>
+            <button class="btn btn-ghost" onclick="closeModal()">✕</button>
+          </div>
+          <select id="playCurr"><option value="TON">TON</option><option value="GRAM">GRAM</option></select>
+          <input id="playBet" type="number" step="0.01" min="0.01" value="0.10" />
+          <button class="btn" style="width:100%;" onclick="runCappedGame('rocket')">إطلاق الصاروخ</button>
+          <div id="playOut" style="margin-top:10px;font-weight:800;"></div>
+        `;
+      } else if (type === "play") {
+        box.innerHTML = `
+          <div class="modal-head">
+            <strong>🎮 PLAY HUB (Max 0.99x)</strong>
+            <button class="btn btn-ghost" onclick="closeModal()">✕</button>
+          </div>
+          <select id="playCurr"><option value="TON">TON</option><option value="GRAM">GRAM</option></select>
+          <input id="playBet" type="number" step="0.01" min="0.01" value="0.10" />
+          <div class="row-gap">
+            <button class="btn" style="flex:1;" onclick="runCappedGame('spin')">SPIN</button>
+            <button class="btn btn-gold" style="flex:1;" onclick="runCappedGame('mines')">MINES</button>
+            <button class="btn btn-ghost" style="flex:1;" onclick="runCappedGame('plinko')">PLINKO</button>
+          </div>
+          <div id="playOut" style="margin-top:10px;font-weight:800;"></div>
+        `;
+      } else if (type === "pvp") {
+        const roomsHtml = appData.pvp_rooms.length
+          ? appData.pvp_rooms.map((r) => `
+              <div class="list-item">
+                <span>#${r.code} • ${r.bet_amount} ${r.currency}</span>
+                <button class="btn" onclick="joinPvp('${r.code}', ${r.bet_amount}, '${r.currency}')">VS</button>
+              </div>
+            `).join("")
+          : `<div class="muted">لا توجد معارك مفتوحة حالياً</div>`;
+        box.innerHTML = `
+          <div class="modal-head">
+            <strong>⚔️ PVP HUB</strong>
+            <button class="btn btn-ghost" onclick="closeModal()">✕</button>
+          </div>
+          <select id="pvpCurr"><option value="TON">TON</option><option value="GRAM">GRAM</option></select>
+          <input id="pvpBet" type="number" step="0.01" min="0.01" value="0.10" />
+          <button class="btn btn-gold" style="width:100%;margin-bottom:10px;" onclick="createPvp()">إنشاء تحدي PVP</button>
+          ${roomsHtml}
+        `;
+      } else if (type === "gifts") {
+        box.innerHTML = `
+          <div class="modal-head">
+            <strong>🎁 Stars & Gifts</strong>
+            <button class="btn btn-ghost" onclick="closeModal()">✕</button>
+          </div>
+          <div class="muted" style="margin-bottom:10px;">رصيد النجوم الحالي: ⭐ ${userState.stars_balance}</div>
+          <div class="row-gap" style="margin-bottom:10px;">
+            <button class="btn btn-gold" style="flex:1;" onclick="topupStars(25)">+25 ⭐</button>
+            <button class="btn" style="flex:1;" onclick="topupStars(50)">+50 ⭐</button>
+          </div>
+          <button class="btn btn-ghost" style="width:100%;" onclick="redeemRealGift(15, '15', 'هدية 15 ⭐')">إرسال هدية حقيقية (15 ⭐)</button>
+        `;
+      }
+      document.getElementById("modalBackdrop").classList.add("open");
+    }
+
+    async function runCappedGame(mode) {
+      const curr = document.getElementById("playCurr").value;
+      const bet = parseFloat(document.getElementById("playBet").value);
+      if (isNaN(bet) || bet <= 0) return;
+
+      const currentBal = curr === "GRAM" ? userState.balance_gram : userState.balance_ton;
+      if (currentBal < bet) {
+        alert("الرصيد غير كافٍ");
+        return;
+      }
+
+      if (curr === "GRAM") userState.balance_gram -= bet;
+      else userState.balance_ton -= bet;
+
+      const ratio = Number((secureRandomFloat() * MAX_WIN_RATIO).toFixed(2));
+      const winAmt = calcCappedWin(bet, ratio);
+
+      if (curr === "GRAM") userState.balance_gram += winAmt;
+      else userState.balance_ton += winAmt;
+
+      await saveUserState();
+      if (winAmt > 0) await pushLiveWin(`+${winAmt} ${curr}`);
+      renderUI();
+
+      const out = document.getElementById("playOut");
+      if (out) out.textContent = `${mode.toUpperCase()} • Ratio: ${ratio.toFixed(2)}x • Win: +${winAmt} ${curr}`;
+    }
+
+    async function createPvp() {
+      const currency = document.getElementById("pvpCurr").value;
+      const bet_amount = parseFloat(document.getElementById("pvpBet").value);
+      if (isNaN(bet_amount) || bet_amount <= 0) return;
+
+      const bal = currency === "GRAM" ? userState.balance_gram : userState.balance_ton;
+      if (bal < bet_amount) {
+        alert("الرصيد غير كافٍ");
+        return;
+      }
+
+      if (currency === "GRAM") userState.balance_gram -= bet_amount;
+      else userState.balance_ton -= bet_amount;
+
+      const code = Math.random().toString(36).substring(2, 6).toUpperCase();
+      const room = { code, creator_tg_id: userId, bet_amount, currency, status: "open" };
+      appData.pvp_rooms.unshift(room);
+
+      await saveUserState();
+      if (hasSupabaseKey()) {
+        await sbReq("pvp_rooms", { method: "POST", body: JSON.stringify([room]) }).catch(() => {});
+      }
+      renderUI();
+      openGameModal("pvp");
+    }
+
+    async function joinPvp(code, bet, currency) {
+      const betNum = Number(bet);
+      const bal = currency === "GRAM" ? userState.balance_gram : userState.balance_ton;
+      if (bal < betNum) {
+        alert("الرصيد غير كافٍ");
+        return;
+      }
+
+      if (currency === "GRAM") userState.balance_gram -= betNum;
+      else userState.balance_ton -= betNum;
+
+      const won = secureRandomFloat() >= 0.5;
+      if (won) {
+        const prize = Number((betNum * 2 * 0.95).toFixed(4));
+        if (currency === "GRAM") userState.balance_gram += prize;
+        else userState.balance_ton += prize;
+        await pushLiveWin(`+${prize} ${currency}`);
+        alert(`فزت في المعركة #${code} (+${prize} ${currency})`);
+      } else {
+        alert(`خسرت المعركة #${code}`);
+      }
+
+      appData.pvp_rooms = appData.pvp_rooms.filter((r) => r.code !== code);
+      if (hasSupabaseKey()) {
+        await sbReq(`pvp_rooms?code=eq.${encodeURIComponent(code)}`, {
+          method: "PATCH",
+          body: JSON.stringify({ status: "finished" })
+        }).catch(() => {});
+      }
+
+      await saveUserState();
+      renderUI();
+      closeModal();
+    }
+
+    async function topupStars(qty) {
+      if (EDGE_FUNCTION_URL) {
+        try {
+          await fetch(EDGE_FUNCTION_URL, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ action: "create_stars_invoice", tg_id: userId, stars: qty })
+          });
+          return;
+        } catch (e) {}
+      }
+      userState.stars_balance += qty;
+      await saveUserState();
+      renderUI();
+      alert(`تمت إضافة ${qty} ⭐`);
+    }
+
+    async function redeemRealGift(starCost, giftId, label) {
+      if (userState.stars_balance < starCost) {
+        alert("رصيد النجوم غير كافٍ");
+        return;
+      }
+      userState.stars_balance -= starCost;
+      userState.backpack.push(label);
+
+      if (EDGE_FUNCTION_URL) {
+        await fetch(EDGE_FUNCTION_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "send_gift", tg_id: userId, gift_id: giftId })
+        }).catch(() => {});
+      }
+
+      await saveUserState();
+      await pushLiveWin(label);
+      renderUI();
+      alert("تم تسجيل الهدية وإضافتها إلى حقيبتك");
+    }
+
+    function copyInviteLink() {
+      const inp = document.getElementById("inviteUrlInput");
+      inp.select();
+      navigator.clipboard?.writeText(inp.value);
+      alert("تم نسخ رابط الدعوة");
+    }
+
+    loadAllData();
+  </script>
+</body>
+</html>
